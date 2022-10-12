@@ -23,6 +23,8 @@ cd audio/ && python3 setup.py install && cd -
 # Install train requirements.
 pip install -r rnnt/ootb/train/requirements.txt
 
+DATASET_DIR=../Dataset
+
 # Set data location.
 mkdir -p $DATASET_DIR
 

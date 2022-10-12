@@ -34,7 +34,7 @@ def normalize_string(s, charset, punct_map):
         return None
 
 
-class DaliRnntIterator(object):
+class python3 tensor_audio_example.py /media/swetha/audio_support/dummy_audio_dataset/train-clean-100-wav/ /media/swetha/audio_support/dummy_audio_dataset/file_list.txt cpu 4 &>PythonCheck.txt(object):
     """
     Returns batches of data for RNN-T training:
     preprocessed_signal, preprocessed_signal_length, transcript, transcript_length

@@ -24,6 +24,9 @@ mode=train
 config=tiny # default is tiny, proof of concept
 is_config=false
 
+DATASET_DIR=../Dataset
+RESULT_DIR=../Results
+
 while getopts "hl:c:" flag ;
 do
   case "${flag}" in

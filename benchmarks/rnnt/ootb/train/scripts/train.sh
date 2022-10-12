@@ -18,6 +18,9 @@
 
 export OMP_NUM_THREADS=1
 
+DATASET_DIR=../Dataset
+RESULT_DIR=../Results
+
 : ${DATA_DIR:=${1:-"$DATASET_DIR/LibriSpeech"}}
 : ${MODEL_CONFIG:=${2:-"configs/baseline_v3-1023sp.yaml"}}
 : ${OUTPUT_DIR:=${3:-"$RESULT_DIR"}}
@@ -25,7 +28,7 @@ export OMP_NUM_THREADS=1
 : ${FB5CONFIG:=${5}}
 : ${CHECKPOINT:-}
 : ${CUDNN_BENCHMARK:=true}
-: ${NUM_GPUS:=1}
+: ${NUM_GPUS:=4}
 : ${AMP:=false}
 : ${GLOBAL_BATCH_SIZE:=1024}
 : ${VAL_BATCH_SIZE:=2}
@@ -39,7 +42,7 @@ export OMP_NUM_THREADS=1
 : ${WARMUP_EPOCHS:=6}  # 8000 steps with 1x8x24 should be ~5.6 epochs
 : ${HOLD_EPOCHS:=40}
 : ${SAVE_AT_THE_END:=false}
-: ${EPOCHS_THIS_JOB:=0}
+: ${EPOCHS_THIS_JOB:=5}
 : ${RESUME:=true}
 : ${NODALI:=true}
 : ${DEVICE:="gpu"}
@@ -48,8 +51,8 @@ export OMP_NUM_THREADS=1
 : ${BETA1:=0.9}
 : ${BETA2:=0.999}
 : ${LOG_FREQUENCY:=1}
-: ${TRAIN_MANIFESTS:="$DATA_DIR/librispeech-train-clean-100-wav.json \
-                      $DATA_DIR/librispeech-train-clean-360-wav.json"}
+: ${TRAIN_MANIFESTS:="$DATA_DIR/librispeech-train-clean-100-wav.json"}
+                      # $DATA_DIR/librispeech-train-clean-360-wav.json"}
                       # Remove train-other-500, which is 500 hours to reduce set-up time.
                       # $DATA_DIR/librispeech-train-other-500-wav.json"}
 : ${VAL_MANIFESTS:="$DATA_DIR/librispeech-dev-clean-wav.json"}

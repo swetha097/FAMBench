@@ -17,15 +17,15 @@
 script_dir=`dirname "${BASH_SOURCE[0]}"`
 set -x
 UTILS_DIR="$script_dir/../utils"
-
+DATASET_DIR=../Dataset
 python $UTILS_DIR/convert_librispeech.py \
     --input_dir $DATASET_DIR/LibriSpeech/train-clean-100 \
     --dest_dir $DATASET_DIR/LibriSpeech/train-clean-100-wav \
     --output_json $DATASET_DIR/LibriSpeech/librispeech-train-clean-100-wav.json
-python $UTILS_DIR/convert_librispeech.py \
-    --input_dir $DATASET_DIR/LibriSpeech/train-clean-360 \
-    --dest_dir $DATASET_DIR/LibriSpeech/train-clean-360-wav \
-    --output_json $DATASET_DIR/LibriSpeech/librispeech-train-clean-360-wav.json
+#python $UTILS_DIR/convert_librispeech.py \
+#    --input_dir $DATASET_DIR/LibriSpeech/train-clean-360 \
+#    --dest_dir $DATASET_DIR/LibriSpeech/train-clean-360-wav \
+#    --output_json $DATASET_DIR/LibriSpeech/librispeech-train-clean-360-wav.json
 # Remove train-other-500 which is 500 hours of Librispeech. To reduce set-up time.
 # python $UTILS_DIR/convert_librispeech.py \
 #     --input_dir $DATASET_DIR/LibriSpeech/train-other-500 \

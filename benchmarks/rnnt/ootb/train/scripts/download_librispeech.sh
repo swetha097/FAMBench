@@ -18,7 +18,7 @@
 script_dir=`dirname "${BASH_SOURCE[0]}"`
 set -x
 UTILS_DIR="$script_dir/../utils"
-
+DATASET_DIR=../Dataset
 DATASET="LibriSpeech"
 DATA_DIR="$DATASET_DIR/$DATASET"
 if [ ! -d "$DATA_DIR" ]

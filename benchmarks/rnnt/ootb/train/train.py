@@ -300,6 +300,7 @@ def main():
                           value=batch_size * world_size * args.grad_accumulation_steps)
 
     tokenizer_kw = config.tokenizer(cfg)
+    print("tokenizer_kw", tokenizer_kw)
     tokenizer = Tokenizer(**tokenizer_kw)
 
 
@@ -321,6 +322,18 @@ def main():
     if args.mlperf:
         logging.log_event(logging.constants.DATA_TRAIN_NUM_BUCKETS, value=args.num_buckets)
 
+    print("DATASET DIR", args.dataset_dir)
+    print("train_dataset_kw", train_dataset_kw)
+    print("train_features_kw", train_features_kw)
+    print("args.train_manifests", args.train_manifests)
+    print("val_dataset_kw", val_dataset_kw)
+    print("val_features_kw", val_features_kw)
+    print("args.val_manifests", args.val_manifests)
+    print("args.grad_accumulation_steps", args.grad_accumulation_steps)
+    print("tokenizer", tokenizer)
+    print("args.num_buckets", args.num_buckets)
+
+    # exit(0)
     if not args.nodali:
         from common.data.dali import sampler as dali_sampler
         from common.data.dali.data_loader import DaliDataLoader
@@ -335,6 +348,7 @@ def main():
             )
         else:
             sampler = dali_sampler.SimpleSampler()
+
 
         train_loader = DaliDataLoader(gpu_id=args.local_rank,
                                       dataset_path=args.dataset_dir,
@@ -488,7 +502,7 @@ def main():
         fb5logger.run_start()
     total_batches = 0
     start_time = time.time()
-    MAX_TIME = 120.0
+    MAX_TIME = 120*10*10
     # Start Batch Loop
 
     # training loop
@@ -514,6 +528,11 @@ def main():
                 all_feat_lens = []
 
             audio, audio_lens, txt, txt_lens = batch
+            print("\n audio", audio)
+            print("\n audio_lens",audio_lens)
+            print("\n txt", txt)
+            print("\n txt_lens"), txt_lens
+            # exit(0)
             #TODO is this the best place to move tensors over to cuda?  Does everything need to go? maybe batch.cuda?
             #Our initial spectrogram and mel filter aug's aren't on gpu's it seems, we should look into this.
             # audio = audio.cuda()
@@ -582,7 +601,7 @@ def main():
                     log((epoch, step % steps_per_epoch or steps_per_epoch, steps_per_epoch),
                         step, 'train',
                         {'loss': loss_item,
-                         **wer,  # optional entry
+                         **wer,
                          'throughput': step_utts / step_time,
                          'took': step_time,
                          'grad-norm': total_norm,
@@ -591,8 +610,8 @@ def main():
                          'lrate': optimizer.param_groups[0]['lr']})
 
                     # FB5 Logger
-                    if (time.time() - start_time) > MAX_TIME:
-                        break
+                    #if (time.time() - start_time) > MAX_TIME:
+                    #    break
 
                 step_start_time = time.time()
 
@@ -608,19 +627,19 @@ def main():
                                           'took': epoch_time})
 
         # FB5 Logger
-        if (time.time() - start_time) > MAX_TIME:
-            break
+        # if (time.time() - start_time) > MAX_TIME:
+        #     break
 
-        if epoch % args.val_frequency == 0:
-            wer = evaluate(epoch, step, val_loader, val_feat_proc,
-                tokenizer.detokenize, ema_model, loss_fn,
-                greedy_decoder, args.amp, args)
-
-            last_wer = wer
-            if wer < best_wer and epoch >= args.save_best_from:
-               checkpointer.save(model, ema_model, optimizer, epoch,
-                                 step, best_wer, is_best=True)
-               best_wer = wer
+        # if epoch % args.val_frequency == 0:
+        wer = evaluate(epoch, step, val_loader, val_feat_proc,
+            tokenizer.detokenize, ema_model, loss_fn,
+            greedy_decoder, args.amp, args)
+        print("wer: ", wer)
+        last_wer = wer
+        if wer < best_wer and epoch >= args.save_best_from:
+            checkpointer.save(model, ema_model, optimizer, epoch,
+                                step, best_wer, is_best=True)
+            best_wer = wer
 
         save_this_epoch = (args.save_frequency is not None and epoch % args.save_frequency == 0) \
             or (epoch in args.keep_milestones)
