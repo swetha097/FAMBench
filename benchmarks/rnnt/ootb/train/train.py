@@ -339,11 +339,11 @@ def main():
     print("args.nodali", args.nodali)
     print("args.rali", args.rali)
     if args.rali:
-        from common.data.dali import sampler as dali_sampler
-        from common.data.dali.data_loader import DaliDataLoader
+        from common.data.rali import sampler as rali_sampler
+        from common.data.rali.data_loader import RaliDataLoader
 
         if args.num_buckets is not None:
-            sampler = dali_sampler.BucketingSampler(
+            sampler = rali_sampler.BucketingSampler(
                 args.num_buckets,
                 batch_size,
                 world_size,
@@ -351,10 +351,10 @@ def main():
                 np_rng
             )
         else:
-            sampler = dali_sampler.SimpleSampler()
+            sampler = rali_sampler.SimpleSampler()
 
         print("DALI DATA LOADER")
-        train_loader = DaliDataLoader(gpu_id=args.local_rank,
+        train_loader = RaliDataLoader(gpu_id=args.local_rank,
                                       dataset_path=args.dataset_dir,
                                       config_data=train_dataset_kw,
                                       config_features=train_features_kw,
@@ -366,13 +366,13 @@ def main():
                                       device_type=args.device,
                                       tokenizer=tokenizer)
 
-        val_loader = DaliDataLoader(gpu_id=args.local_rank,
+        val_loader = RaliDataLoader(gpu_id=args.local_rank,
                                     dataset_path=args.dataset_dir,
                                     config_data=val_dataset_kw,
                                     config_features=val_features_kw,
                                     json_names=args.val_manifests,
                                     batch_size=args.val_batch_size,
-                                    sampler=dali_sampler.SimpleSampler(),
+                                    sampler=rali_sampler.SimpleSampler(),
                                     pipeline_type="val",
                                     device_type=args.device,
                                     tokenizer=tokenizer)
@@ -517,6 +517,7 @@ def main():
     # training loop
     model.train()
     for epoch in range(start_epoch + 1, args.epochs + 1):
+        print("\n Epoch: ", epoch)
         if args.mlperf:
             logging.log_start(logging.constants.BLOCK_START,
                               metadata=dict(first_epoch_num=epoch,
@@ -537,11 +538,11 @@ def main():
                 all_feat_lens = []
 
             audio, audio_lens, txt, txt_lens = batch
-            print("\n audio", audio)
-            print("\n audio shape", audio.size())
-            print("\n audio_lens",audio_lens)
-            print("\n txt", txt)
-            print("\n txt_lens"), txt_lens
+            # print("\n audio", audio)
+            # print("\n audio shape", audio.size())
+            # print("\n audio_lens",audio_lens)
+            # print("\n txt", txt)
+            # print("\n txt_lens"), txt_lens
             # exit(0)
             #TODO is this the best place to move tensors over to cuda?  Does everything need to go? maybe batch.cuda?
             #Our initial spectrogram and mel filter aug's aren't on gpu's it seems, we should look into this.

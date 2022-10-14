@@ -43,7 +43,7 @@ class SpeedPerturbationParams:
         ):
         pass
 
-class DaliPipeline(object):
+class RaliPipeline(object):
     def __init__(self, *,
                  pipeline_type,
                  device_id,
@@ -63,7 +63,7 @@ class DaliPipeline(object):
                  max_duration,
                  preprocessing_device="gpu"):
 
-        self._dali_init_log(locals())
+        self._rali_init_log(locals())
 
         if torch.distributed.is_initialized():
             shard_id = torch.distributed.get_rank()
@@ -87,15 +87,15 @@ class DaliPipeline(object):
         self.do_remove_silence = True if silence_threshold is not None else False
         self.batch_size = batch_size
         self.file_root = file_root
-        print("FILE ROOT", self.file_root)
-        print("sampler.get_file_list_path()", sampler.get_file_list_path())
-        # exit(0)
         self.num_threads = num_threads
+        self.nfft = nfft
         self.preemph_coeff = preemph_coeff
         self.device_id = device_id
         self.sampler = sampler
+        self.window_size = window_size
+        self.window_stride = window_stride
+        
         shuffle = train_pipeline and not sampler.is_sampler_random()
-        print("Calls constructor")
         
         
         # DALI OPS
@@ -177,12 +177,12 @@ class DaliPipeline(object):
         )
 
     @staticmethod
-    def _dali_init_log(args: dict):
+    def _rali_init_log(args: dict):
         if (not torch.distributed.is_initialized() or (
                 torch.distributed.is_initialized() and torch.distributed.get_rank() == 0)):  # print once
             max_len = max([len(ii) for ii in args.keys()])
             fmt_string = '\t%' + str(max_len) + 's : %s'
-            print('Initializing DALI with parameters:')
+            print('Initializing RALI with parameters:')
             for keyPair in sorted(args.items()):
                 print(fmt_string % keyPair)
     
@@ -194,15 +194,12 @@ class DaliPipeline(object):
             speed_perturbation_coeffs = fn.uniform(rng_range=[0.85, 1.15])
             sample_rate = 16000
             # Get the correct dataset path instead of hardcoding the dataset.
-            audio_decode = fn.decoders.audio(jpegs, file_root="/media/sai/FAMBench/Dataset/LibriSpeech/train-clean-100-wav/", sample_rate=sample_rate )
+            audio_decode = fn.decoders.audio(jpegs, file_root="/media/sai/FAMBench/Dataset/LibriSpeech/train-clean-100-wav/", sample_rate=self.sample_rate )
             begin_and_length = fn.nonsilent_region(audio_decode) # Dont understand where to use this as input in Slice to pass as what arguments - Confused
             trim_silence = fn.slice(audio_decode, normalized_anchor=False, normalized_shape=False, axes=[0], anchor=[0], shape=[4], fill_values=[0.3])
-            window_size=0.02
-            window_stride=0.01
             preemph_audio = fn.preemphasis_filter(trim_silence, preemph_coeff=self.preemph_coeff)
-            # spectogram = fn.spectrogram(preemph_audio, nfft=nfft, window_length=int(window_size* sample_rate), window_step= int(window_stride * sample_rate))
-            nfilt=80 #nfeatures
-            mel_fbank = fn.mel_filter_bank(preemph_audio, sample_rate=sample_rate, nfilter=self.nfeatures, normalize=True)
+            spectogram = fn.spectrogram(preemph_audio, nfft=self.nfft, window_length=int(self.window_size * self.sample_rate), window_step= int(self.window_stride * self.sample_rate))
+            mel_fbank = fn.mel_filter_bank(spectogram, sample_rate=self.sample_rate, nfilter=self.nfeatures, normalize=True)
             to_decibels = fn.to_decibals(mel_fbank, rocal_tensor_output_type=types.FLOAT)
             normalize = fn.normalize(to_decibels, axes=[1])
             padded_audio = fn.pad(normalize, fill_value=0)

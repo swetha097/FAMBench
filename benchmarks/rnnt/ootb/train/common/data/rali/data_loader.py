@@ -16,8 +16,8 @@ import os
 import math
 import numpy as np
 import torch.distributed as dist
-from .iterator import DaliRnntIterator
-from .pipeline import DaliPipeline
+from .iterator import RaliRnntIterator
+from .pipeline import RaliPipeline
 from common.helpers import print_once
 
 
@@ -53,13 +53,13 @@ def _parse_json(json_path: str, start_label=0, predicate=lambda json: True):
     return output_files, transcripts
 
 
-class DaliDataLoader:
+class RaliDataLoader:
     """
     DataLoader is the main entry point to the data preprocessing pipeline.
     To use, create an object and then just iterate over `data_iterator`.
     DataLoader will do the rest for you.
     Example:
-        data_layer = DataLoader(DaliTrainPipeline, path, json, bs, ngpu)
+        data_layer = DataLoader(RaliTrainPipeline, path, json, bs, ngpu)
         data_it = data_layer.data_iterator
         for data in data_it:
             print(data)  # Here's your preprocessed data
@@ -79,7 +79,7 @@ class DaliDataLoader:
         self.device_type = device_type
         self.pipeline_type = self._parse_pipeline_type(pipeline_type)
         self.sampler = sampler
-        self._dali_data_iterator = self._init_iterator(gpu_id=gpu_id, dataset_path=dataset_path,
+        self._rali_data_iterator = self._init_iterator(gpu_id=gpu_id, dataset_path=dataset_path,
                                                        config_data=config_data,
                                                        config_features=config_features,
                                                        json_names=json_names, tokenizer=tokenizer,
@@ -89,7 +89,7 @@ class DaliDataLoader:
                        pipeline_type):
         print("dataset_path", dataset_path)
         """
-        Returns data iterator. Data underneath this operator is preprocessed within Dali
+        Returns data iterator. Data underneath this operator is preprocessed within Rali
         """
 
         output_files, transcripts = {}, {}
@@ -107,14 +107,14 @@ class DaliDataLoader:
         self.dataset_size = self.sampler.get_dataset_size()
         print_once(f"Dataset read by DALI. Number of samples: {self.dataset_size}")
         #why do I need this pipeline class object ?
-        pipeline = DaliPipeline.from_config(config_data=config_data, config_features=config_features, device_id=gpu_id,
+        pipeline = RaliPipeline.from_config(config_data=config_data, config_features=config_features, device_id=gpu_id,
                                             file_root=dataset_path, sampler=self.sampler,
                                             device_type=self.device_type, batch_size=self.batch_size,
                                             pipeline_type=pipeline_type)
         audio_pipeline = pipeline.RaliPipline()
         print("OUT of the pipeline creation")
         # Return the iterator here
-        return DaliRnntIterator(audio_pipeline, transcripts=transcripts, tokenizer=tokenizer, batch_size=self.batch_size,
+        return RaliRnntIterator(audio_pipeline, transcripts=transcripts, tokenizer=tokenizer, batch_size=self.batch_size,
                                   shard_size=self._shard_size(), pipeline_type=pipeline_type)
 
     @staticmethod
@@ -144,8 +144,8 @@ class DaliDataLoader:
 
     def data_iterator(self):
         print("DATA_ITER")
-        return self._dali_data_iterator
+        return self._rali_data_iterator
 
     def __iter__(self):
         print("__ITER__")
-        return self._dali_data_iterator
+        return self._rali_data_iterator

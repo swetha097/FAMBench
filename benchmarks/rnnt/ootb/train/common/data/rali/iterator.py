@@ -34,16 +34,16 @@ def normalize_string(s, charset, punct_map):
         return None
 
 
-class DaliRnntIterator(object):
+class RaliRnntIterator(object):
     """
     Returns batches of data for RNN-T training:
     preprocessed_signal, preprocessed_signal_length, transcript, transcript_length
 
-    This iterator is not meant to be the entry point to Dali processing pipeline.
+    This iterator is not meant to be the entry point to Rali processing pipeline.
     Use DataLoader instead.
     """
 
-    def __init__(self, dali_pipelines, transcripts, tokenizer, batch_size, shard_size, pipeline_type, normalize_transcripts=False):
+    def __init__(self, rali_pipelines, transcripts, tokenizer, batch_size, shard_size, pipeline_type, normalize_transcripts=False):
         self.normalize_transcripts = normalize_transcripts
         self.tokenizer = tokenizer
         self.batch_size = batch_size
@@ -51,9 +51,9 @@ class DaliRnntIterator(object):
 
         # in train pipeline shard_size is set to divisable by batch_size, so PARTIAL policy is safe
         if pipeline_type == 'val':
-            self.dali_it = RALIClassificationIterator(dali_pipelines)
+            self.rali_it = RALIClassificationIterator(rali_pipelines)
         else:
-            self.dali_it = RALIClassificationIterator(dali_pipelines)
+            self.rali_it = RALIClassificationIterator(rali_pipelines)
 
         self.tokenize(transcripts)
 
@@ -86,13 +86,13 @@ class DaliRnntIterator(object):
         return transcripts.cuda(), self.t_sizes[ids].cuda()
 
     def __next__(self):
-        data = self.dali_it.__next__()
+        data = self.rali_it.__next__()
         audio, audio_shape = data[0], data[2][:,0] #Getting all rows, 1st cols from original length, permuting the audio for now, need to get the right audio data in correct format for now. TODO: TO return the audio_length, audio_data in right format
         audio = torch.permute(audio, (0, 2, 1))
         if audio.shape[0] == 0:
             # empty tensor means, other GPUs got last samples from dataset
             # and this GPU has nothing to do; calling `__next__` raises StopIteration
-            return self.dali_it.__next__()
+            return self.rali_it.__next__()
         audio = audio[:, :, :audio_shape.max()] # the last batch
         transcripts, transcripts_lengths = self._gen_transcripts(data[1])
         return audio.cuda(), audio_shape.cuda(), transcripts.cuda(), transcripts_lengths.cuda()
