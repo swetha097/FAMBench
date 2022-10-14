@@ -155,10 +155,8 @@ class AudioDataset(Dataset):
 
     def _load_json_manifest(self, fpath):
         j = json.load(open(fpath, "r", encoding="utf-8"))
-        print("j ", j)
+        # print("j ", j)
         for i, s in enumerate(j):
-            print("s",s)
-            # exit(0)
             if i % 1000 == 0:
                 print(f'{i:>10}/{len(j):<10}', end='\r')
 
@@ -172,7 +170,6 @@ class AudioDataset(Dataset):
             # Prune and normalize according to transcript
             tr = (s.get('transcript', None) or
                   self.load_transcript(s['text_filepath']))
-            print("tr",tr)
 
             if not isinstance(tr, str):
                 print(f'WARNING: Skipped sample (transcript not a str): {tr}.')
@@ -181,10 +178,8 @@ class AudioDataset(Dataset):
 
             if self.normalize_transcripts:
                 tr = normalize_string(tr, self.tokenizer.charset, self.punctuation_map)
-            print("tf",tr)
 
             s["transcript"] = self.tokenizer.tokenize(tr)
-            print("s[trasnscript]",s["transcript"])
             
             files = s.pop('files')
             print("files",files)
@@ -196,7 +191,6 @@ class AudioDataset(Dataset):
                                    for f in files]
             self.samples.append(s)
             self.duration += s['duration']
-            exit(0)
             if self.max_utts > 0 and len(self.samples) >= self.max_utts:
                 print(f'Reached max_utts={self.max_utts}. Finished parsing {fpath}.')
                 break

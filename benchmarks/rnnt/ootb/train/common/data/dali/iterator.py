@@ -34,7 +34,7 @@ def normalize_string(s, charset, punct_map):
         return None
 
 
-class python3 tensor_audio_example.py /media/swetha/audio_support/dummy_audio_dataset/train-clean-100-wav/ /media/swetha/audio_support/dummy_audio_dataset/file_list.txt cpu 4 &>PythonCheck.txt(object):
+class DaliRnntIterator(object):
     """
     Returns batches of data for RNN-T training:
     preprocessed_signal, preprocessed_signal_length, transcript, transcript_length
@@ -47,20 +47,13 @@ class python3 tensor_audio_example.py /media/swetha/audio_support/dummy_audio_da
         self.normalize_transcripts = normalize_transcripts
         self.tokenizer = tokenizer
         self.batch_size = batch_size
-        from nvidia.dali.plugin.pytorch import DALIGenericIterator
-        from nvidia.dali.plugin.base_iterator import LastBatchPolicy
+        from amd.rali.plugin.pytorch import RALIClassificationIterator
 
         # in train pipeline shard_size is set to divisable by batch_size, so PARTIAL policy is safe
         if pipeline_type == 'val':
-            self.dali_it = DALIGenericIterator(
-                dali_pipelines, ["audio", "label", "audio_shape"], reader_name="Reader",
-                dynamic_shape=True, auto_reset=True,
-                last_batch_policy=LastBatchPolicy.PARTIAL)
+            self.dali_it = RALIClassificationIterator(dali_pipelines)
         else:
-            self.dali_it = DALIGenericIterator(
-                dali_pipelines, ["audio", "label", "audio_shape"], size=shard_size,
-                dynamic_shape=True, auto_reset=True, last_batch_padded=True,
-                last_batch_policy=LastBatchPolicy.PARTIAL)
+            self.dali_it = RALIClassificationIterator(dali_pipelines)
 
         self.tokenize(transcripts)
 
@@ -94,14 +87,15 @@ class python3 tensor_audio_example.py /media/swetha/audio_support/dummy_audio_da
 
     def __next__(self):
         data = self.dali_it.__next__()
-        audio, audio_shape = data[0]["audio"], data[0]["audio_shape"][:, 1]
+        audio, audio_shape = data[0], data[2][:,0] #Getting all rows, 1st cols from original length, permuting the audio for now, need to get the right audio data in correct format for now. TODO: TO return the audio_length, audio_data in right format
+        audio = torch.permute(audio, (0, 2, 1))
         if audio.shape[0] == 0:
             # empty tensor means, other GPUs got last samples from dataset
             # and this GPU has nothing to do; calling `__next__` raises StopIteration
             return self.dali_it.__next__()
         audio = audio[:, :, :audio_shape.max()] # the last batch
-        transcripts, transcripts_lengths = self._gen_transcripts(data[0]["label"])
-        return audio, audio_shape, transcripts, transcripts_lengths
+        transcripts, transcripts_lengths = self._gen_transcripts(data[1])
+        return audio.cuda(), audio_shape.cuda(), transcripts.cuda(), transcripts_lengths.cuda()
 
     def next(self):
         return self.__next__()

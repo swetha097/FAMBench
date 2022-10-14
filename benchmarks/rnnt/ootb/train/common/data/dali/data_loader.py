@@ -87,27 +87,34 @@ class DaliDataLoader:
 
     def _init_iterator(self, gpu_id, dataset_path, config_data, config_features, json_names: list, tokenizer: list,
                        pipeline_type):
+        print("dataset_path", dataset_path)
         """
         Returns data iterator. Data underneath this operator is preprocessed within Dali
         """
 
         output_files, transcripts = {}, {}
         max_duration = config_data['max_duration']
+        print("json names", json_names)
         for jname in json_names:
-            of, tr = _parse_json(jname if jname[0] == '/' else os.path.join(dataset_path, jname), len(output_files),
+            print("json    ---",jname[0])
+            of, tr = _parse_json(jname if jname[0] == '/' 
+                                 else os.path.join(dataset_path, jname),
+                                 len(output_files),
                                  predicate=lambda json: json['original_duration'] <= max_duration)
             output_files.update(of)
             transcripts.update(tr)
         self.sampler.make_file_list(output_files, json_names)
         self.dataset_size = self.sampler.get_dataset_size()
         print_once(f"Dataset read by DALI. Number of samples: {self.dataset_size}")
-
+        #why do I need this pipeline class object ?
         pipeline = DaliPipeline.from_config(config_data=config_data, config_features=config_features, device_id=gpu_id,
                                             file_root=dataset_path, sampler=self.sampler,
                                             device_type=self.device_type, batch_size=self.batch_size,
                                             pipeline_type=pipeline_type)
-
-        return DaliRnntIterator([pipeline], transcripts=transcripts, tokenizer=tokenizer, batch_size=self.batch_size,
+        audio_pipeline = pipeline.RaliPipline()
+        print("OUT of the pipeline creation")
+        # Return the iterator here
+        return DaliRnntIterator(audio_pipeline, transcripts=transcripts, tokenizer=tokenizer, batch_size=self.batch_size,
                                   shard_size=self._shard_size(), pipeline_type=pipeline_type)
 
     @staticmethod
@@ -125,19 +132,20 @@ class DaliDataLoader:
             divisor = world_size * self.batch_size * self.grad_accumulation_steps
             return self.dataset_size // divisor * divisor // world_size
         else:
+            print("SHARD SIZE", int(math.ceil(self.dataset_size / world_size)))
             return int(math.ceil(self.dataset_size / world_size))
 
     def __len__(self):
         """
         Number of batches handled by each GPU.
         """
-        if self.drop_last:
-            assert self._shard_size() % self.batch_size == 0, f'{self._shard_size()} {self.batch_size}'
-
+        print("LEN:", int(math.ceil(self._shard_size() / self.batch_size)))
         return int(math.ceil(self._shard_size() / self.batch_size))
 
     def data_iterator(self):
+        print("DATA_ITER")
         return self._dali_data_iterator
 
     def __iter__(self):
+        print("__ITER__")
         return self._dali_data_iterator

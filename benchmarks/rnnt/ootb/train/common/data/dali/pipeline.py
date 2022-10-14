@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import nvidia.dali
-import nvidia.dali.ops as ops
-import nvidia.dali.types as types
+# import nvidia.dali
+# import nvidia.dali.ops as ops
+# import nvidia.dali.types as types
+from amd.rali.pipeline import Pipeline
+import amd.rali.fn as fn
+import amd.rali.types as types
 import multiprocessing
 import numpy as np
 import torch
@@ -40,7 +43,7 @@ class SpeedPerturbationParams:
         ):
         pass
 
-class DaliPipeline(nvidia.dali.pipeline.Pipeline):
+class DaliPipeline(object):
     def __init__(self, *,
                  pipeline_type,
                  device_id,
@@ -59,7 +62,6 @@ class DaliPipeline(nvidia.dali.pipeline.Pipeline):
                  preemph_coeff,
                  max_duration,
                  preprocessing_device="gpu"):
-        super().__init__(batch_size, num_threads, device_id)
 
         self._dali_init_log(locals())
 
@@ -83,43 +85,55 @@ class DaliPipeline(nvidia.dali.pipeline.Pipeline):
         self.nfeatures = nfeatures
         self.max_duration = max_duration
         self.do_remove_silence = True if silence_threshold is not None else False
-
+        self.batch_size = batch_size
+        self.file_root = file_root
+        print("FILE ROOT", self.file_root)
+        print("sampler.get_file_list_path()", sampler.get_file_list_path())
+        # exit(0)
+        self.num_threads = num_threads
+        self.preemph_coeff = preemph_coeff
+        self.device_id = device_id
+        self.sampler = sampler
         shuffle = train_pipeline and not sampler.is_sampler_random()
-        self.read = ops.FileReader(name="Reader", pad_last_batch=(pipeline_type == 'val'), device="cpu", file_root=file_root, file_list=sampler.get_file_list_path(), shard_id=shard_id,
-                                   num_shards=n_shards, shuffle_after_epoch=shuffle)
+        print("Calls constructor")
+        
+        
+        # DALI OPS
+        # self.read = ops.FileReader(name="Reader", pad_last_batch=(pipeline_type == 'val'), device="cpu", file_root=file_root, file_list=sampler.get_file_list_path(), shard_id=shard_id,
+        #                            num_shards=n_shards, shuffle_after_epoch=shuffle)
 
-        if resample_range is not None:
-            self.speed_perturbation_coeffs = ops.Uniform(device="cpu", range=resample_range)
-        else:
-            self.speed_perturbation_coeffs = None
+        # if resample_range is not None:
+        #     self.speed_perturbation_coeffs = ops.Uniform(device="cpu", range=resample_range)
+        # else:
+        #     self.speed_perturbation_coeffs = None
 
-        self.decode = ops.AudioDecoder(device="cpu", sample_rate=self.sample_rate if resample_range is None else None,
-                                       dtype=types.FLOAT, downmix=True)
+        # self.decode = ops.AudioDecoder(device="cpu", sample_rate=self.sample_rate if resample_range is None else None,
+        #                                dtype=types.FLOAT, downmix=True)
 
-        self.normal_distribution = ops.NormalDistribution(device=preprocessing_device)
+        # self.normal_distribution = ops.NormalDistribution(device=preprocessing_device)
 
-        self.preemph = ops.PreemphasisFilter(device=preprocessing_device, preemph_coeff=preemph_coeff)
+        # self.preemph = ops.PreemphasisFilter(device=preprocessing_device, preemph_coeff=preemph_coeff)
 
-        self.spectrogram = ops.Spectrogram(device=preprocessing_device, nfft=nfft,
-                                           window_length=window_size * sample_rate,
-                                           window_step=window_stride * sample_rate)
+        # self.spectrogram = ops.Spectrogram(device=preprocessing_device, nfft=nfft,
+        #                                    window_length=window_size * sample_rate,
+        #                                    window_step=window_stride * sample_rate)
 
-        self.mel_fbank = ops.MelFilterBank(device=preprocessing_device, sample_rate=sample_rate, nfilter=self.nfeatures,
-                                           normalize=True)
+        # self.mel_fbank = ops.MelFilterBank(device=preprocessing_device, sample_rate=sample_rate, nfilter=self.nfeatures,
+        #                                    normalize=True)
 
-        self.log_features = ops.ToDecibels(device=preprocessing_device, multiplier=np.log(10), reference=1.0,
-                                           cutoff_db=math.log(1e-20))
+        # self.log_features = ops.ToDecibels(device=preprocessing_device, multiplier=np.log(10), reference=1.0,
+        #                                    cutoff_db=math.log(1e-20))
 
-        self.get_shape = ops.Shapes(device=preprocessing_device)
+        # self.get_shape = ops.Shapes(device=preprocessing_device)
 
-        self.normalize = ops.Normalize(device=preprocessing_device, axes=[1])
+        # self.normalize = ops.Normalize(device=preprocessing_device, axes=[1])
 
-        self.pad = ops.Pad(device=preprocessing_device, fill_value=0)
+        # self.pad = ops.Pad(device=preprocessing_device, fill_value=0)
 
-        # Silence trimming
-        self.get_nonsilent_region = ops.NonsilentRegion(device="cpu", cutoff_db=silence_threshold)
-        self.trim_silence = ops.Slice(device="cpu", normalized_anchor=False, normalized_shape=False, axes=[0])
-        self.to_float = ops.Cast(device="cpu", dtype=types.FLOAT)
+        # # Silence trimming
+        # self.get_nonsilent_region = ops.NonsilentRegion(device="cpu", cutoff_db=silence_threshold)
+        # self.trim_silence = ops.Slice(device="cpu", normalized_anchor=False, normalized_shape=False, axes=[0])
+        # self.to_float = ops.Cast(device="cpu", dtype=types.FLOAT)
 
     @classmethod
     def from_config(cls, pipeline_type, device_id, batch_size, file_root: str, sampler, config_data: dict,
@@ -171,42 +185,66 @@ class DaliPipeline(nvidia.dali.pipeline.Pipeline):
             print('Initializing DALI with parameters:')
             for keyPair in sorted(args.items()):
                 print(fmt_string % keyPair)
+    
+    def RaliPipline(self):
+        _rali_cpu = True #TODO : Introduce a param from user for cpu / gpu backend
+        audio_pipeline = Pipeline(batch_size=self.batch_size, num_threads=self.num_threads, device_id=self.device_id, rocal_cpu=_rali_cpu)
+        with audio_pipeline:
+            jpegs, labels = fn.readers.file(file_root="/media/sai/FAMBench/Dataset/LibriSpeech/train-clean-100-wav/", file_list=self.sampler.get_file_list_path())
+            speed_perturbation_coeffs = fn.uniform(rng_range=[0.85, 1.15])
+            sample_rate = 16000
+            # Get the correct dataset path instead of hardcoding the dataset.
+            audio_decode = fn.decoders.audio(jpegs, file_root="/media/sai/FAMBench/Dataset/LibriSpeech/train-clean-100-wav/", sample_rate=sample_rate )
+            begin_and_length = fn.nonsilent_region(audio_decode) # Dont understand where to use this as input in Slice to pass as what arguments - Confused
+            trim_silence = fn.slice(audio_decode, normalized_anchor=False, normalized_shape=False, axes=[0], anchor=[0], shape=[4], fill_values=[0.3])
+            window_size=0.02
+            window_stride=0.01
+            preemph_audio = fn.preemphasis_filter(trim_silence, preemph_coeff=self.preemph_coeff)
+            # spectogram = fn.spectrogram(preemph_audio, nfft=nfft, window_length=int(window_size* sample_rate), window_step= int(window_stride * sample_rate))
+            nfilt=80 #nfeatures
+            mel_fbank = fn.mel_filter_bank(preemph_audio, sample_rate=sample_rate, nfilter=self.nfeatures, normalize=True)
+            to_decibels = fn.to_decibals(mel_fbank, rocal_tensor_output_type=types.FLOAT)
+            normalize = fn.normalize(to_decibels, axes=[1])
+            padded_audio = fn.pad(normalize, fill_value=0)
+            audio_pipeline.set_outputs(padded_audio)
 
-    def _remove_silence(self, inp):
-        begin, length = self.get_nonsilent_region(inp)
-        out = self.trim_silence(inp, self.to_float(begin), self.to_float(length))
-        return out
+        audio_pipeline.build()
+        return audio_pipeline
+    # def _remove_silence(self, inp):
+    #     begin, length = self.get_nonsilent_region(inp)
+    #     out = self.trim_silence(inp, self.to_float(begin), self.to_float(length))
+    #     return out
 
-    def define_graph(self):
-        audio, label = self.read()
-        if not self.train or self.speed_perturbation_coeffs is None:
-            audio, sr = self.decode(audio)
-        else:
-            resample_coeffs = self.speed_perturbation_coeffs() * self.sample_rate
-            audio, sr = self.decode(audio, sample_rate=resample_coeffs)
+    # def define_graph(self):
+    #     audio, label = self.read()
+    #     if not self.train or self.speed_perturbation_coeffs is None:
+    #         audio, sr = self.decode(audio)
+    #     else:
+    #         resample_coeffs = self.speed_perturbation_coeffs() * self.sample_rate
+    #         audio, sr = self.decode(audio, sample_rate=resample_coeffs)
 
-        if self.do_remove_silence:
-            audio = self._remove_silence(audio)
+    #     if self.do_remove_silence:
+    #         audio = self._remove_silence(audio)
 
-        # Max duration drop is performed at DataLayer stage
+    #     # Max duration drop is performed at DataLayer stage
 
-        if self.preprocessing_device == "gpu":
-            audio = audio.gpu()
+    #     if self.preprocessing_device == "gpu":
+    #         audio = audio.gpu()
 
-        if self.dither_coeff != 0.:
-            audio = audio + self.normal_distribution(audio) * self.dither_coeff
+    #     if self.dither_coeff != 0.:
+    #         audio = audio + self.normal_distribution(audio) * self.dither_coeff
 
-        audio = self.preemph(audio)
+    #     audio = self.preemph(audio)
 
-        audio = self.spectrogram(audio)
-        audio = self.mel_fbank(audio)
-        audio = self.log_features(audio)
+    #     audio = self.spectrogram(audio)
+    #     audio = self.mel_fbank(audio)
+    #     audio = self.log_features(audio)
 
-        audio_len = self.get_shape(audio)
+    #     audio_len = self.get_shape(audio)
 
-        audio = self.normalize(audio)
-        audio = self.pad(audio)
+    #     audio = self.normalize(audio)
+    #     audio = self.pad(audio)
 
-        # When modifying DALI pipeline returns, make sure you update `output_map` in DALIGenericIterator invocation
-        return audio.gpu(), label, audio_len.gpu()
+    #     # When modifying DALI pipeline returns, make sure you update `output_map` in DALIGenericIterator invocation
+    #     return audio.gpu(), label, audio_len.gpu()
 

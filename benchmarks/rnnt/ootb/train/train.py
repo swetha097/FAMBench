@@ -103,6 +103,8 @@ def parse_args():
     io = parser.add_argument_group('feature and checkpointing setup')
     io.add_argument('--nodali', action='store_true', default=True,
                     help='Don\'t use DALI pipeline for fast data processing')
+    io.add_argument('--rali', action='store_true', default=True,
+                    help='Use RALI pipeline for fast data processing')
     io.add_argument('--device', type=str, choices=['cpu', 'gpu'],
                     default='gpu', help='Use device for execution.')
     io.add_argument('--num-workers', default=6, type=int,
@@ -334,7 +336,9 @@ def main():
     print("args.num_buckets", args.num_buckets)
 
     # exit(0)
-    if not args.nodali:
+    print("args.nodali", args.nodali)
+    print("args.rali", args.rali)
+    if args.rali:
         from common.data.dali import sampler as dali_sampler
         from common.data.dali.data_loader import DaliDataLoader
 
@@ -349,7 +353,7 @@ def main():
         else:
             sampler = dali_sampler.SimpleSampler()
 
-
+        print("DALI DATA LOADER")
         train_loader = DaliDataLoader(gpu_id=args.local_rank,
                                       dataset_path=args.dataset_dir,
                                       config_data=train_dataset_kw,
@@ -372,36 +376,41 @@ def main():
                                     pipeline_type="val",
                                     device_type=args.device,
                                     tokenizer=tokenizer)
-    else:
-        from common.data.data_loader import AudioDataLoader
+        print("DALI DATA LOADER")
+        print("EXITING 1")
+        # exit(0)
+    # else:
+        # from common.data.data_loader import AudioDataLoader
 
         #TODO, pass in config data for sample_rate, etc. potentially use wrapper class to drive dataset, sampler, and dataloader creation, returning just the dataloader
-        train_loader = AudioDataLoader(
-            config_features=train_features_kw,
-            pipeline_type="train",
-            gpu_id=args.local_rank,
-            data_dir=args.dataset_dir,
-            tokenizer=tokenizer,
-            manifest_fpaths=args.train_manifests,
-            batch_size=batch_size,
-            num_replicas=world_size,
-            rank=args.local_rank,
-            num_workers=args.num_workers,
-            device_type=args.device)
+        # train_loader = AudioDataLoader(
+        #     config_features=train_features_kw,
+        #     pipeline_type="train",
+        #     gpu_id=args.local_rank,
+        #     data_dir=args.dataset_dir,
+        #     tokenizer=tokenizer,
+        #     manifest_fpaths=args.train_manifests,
+        #     batch_size=batch_size,
+        #     num_replicas=world_size,
+        #     rank=args.local_rank,
+        #     num_workers=args.num_workers,
+        #     device_type=args.device)
 
-        val_loader = AudioDataLoader(
-            config_features=val_features_kw,
-            pipeline_type="val",
-            gpu_id=args.local_rank,
-            data_dir=args.dataset_dir,
-            tokenizer=tokenizer,
-            manifest_fpaths=args.val_manifests,
-            batch_size=batch_size,
-            num_replicas=world_size,
-            rank=args.local_rank,
-            num_workers=args.num_workers,
-            device_type=args.device)
+        # val_loader = AudioDataLoader(
+        #     config_features=val_features_kw,
+        #     pipeline_type="val",
+        #     gpu_id=args.local_rank,
+        #     data_dir=args.dataset_dir,
+        #     tokenizer=tokenizer,
+        #     manifest_fpaths=args.val_manifests,
+        #     batch_size=batch_size,
+        #     num_replicas=world_size,
+        #     rank=args.local_rank,
+        #     num_workers=args.num_workers,
+        #     device_type=args.device)
+    print("EXITING ***** YAY")
 
+    # exit(0)
     train_feat_proc = train_augmentations
     val_feat_proc = val_augmentations
 
@@ -529,6 +538,7 @@ def main():
 
             audio, audio_lens, txt, txt_lens = batch
             print("\n audio", audio)
+            print("\n audio shape", audio.size())
             print("\n audio_lens",audio_lens)
             print("\n txt", txt)
             print("\n txt_lens"), txt_lens
@@ -610,8 +620,8 @@ def main():
                          'lrate': optimizer.param_groups[0]['lr']})
 
                     # FB5 Logger
-                    #if (time.time() - start_time) > MAX_TIME:
-                    #    break
+                    if (time.time() - start_time) > MAX_TIME:
+                       break
 
                 step_start_time = time.time()
 
@@ -627,8 +637,8 @@ def main():
                                           'took': epoch_time})
 
         # FB5 Logger
-        # if (time.time() - start_time) > MAX_TIME:
-        #     break
+        if (time.time() - start_time) > MAX_TIME:
+            break
 
         # if epoch % args.val_frequency == 0:
         wer = evaluate(epoch, step, val_loader, val_feat_proc,

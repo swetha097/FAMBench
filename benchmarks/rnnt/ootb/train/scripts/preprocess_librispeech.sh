@@ -17,7 +17,7 @@
 script_dir=`dirname "${BASH_SOURCE[0]}"`
 set -x
 UTILS_DIR="$script_dir/../utils"
-DATASET_DIR=../Dataset
+DATASET_DIR=/media/sai/FAMBench/Dataset/
 python $UTILS_DIR/convert_librispeech.py \
     --input_dir $DATASET_DIR/LibriSpeech/train-clean-100 \
     --dest_dir $DATASET_DIR/LibriSpeech/train-clean-100-wav \

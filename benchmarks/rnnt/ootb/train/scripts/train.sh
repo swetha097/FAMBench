@@ -18,7 +18,7 @@
 
 export OMP_NUM_THREADS=1
 
-DATASET_DIR=../Dataset
+DATASET_DIR=/media/sai/FAMBench/Dataset/
 RESULT_DIR=../Results
 
 : ${DATA_DIR:=${1:-"$DATASET_DIR/LibriSpeech"}}
@@ -28,7 +28,7 @@ RESULT_DIR=../Results
 : ${FB5CONFIG:=${5}}
 : ${CHECKPOINT:-}
 : ${CUDNN_BENCHMARK:=true}
-: ${NUM_GPUS:=4}
+: ${NUM_GPUS:=1}
 : ${AMP:=false}
 : ${GLOBAL_BATCH_SIZE:=1024}
 : ${VAL_BATCH_SIZE:=2}
@@ -45,6 +45,7 @@ RESULT_DIR=../Results
 : ${EPOCHS_THIS_JOB:=5}
 : ${RESUME:=true}
 : ${NODALI:=true}
+: ${RALI:=false}
 : ${DEVICE:="gpu"}
 : ${VAL_FREQUENCY:=1}
 : ${PREDICTION_FREQUENCY:=1000}
@@ -97,6 +98,7 @@ ARGS+=" --beta2=$BETA2"
 [ "$RESUME" = true ] &&              ARGS+=" --resume"
 [ "$CUDNN_BENCHMARK" = true ] &&     ARGS+=" --cudnn_benchmark"
 [ "$NODALI" = true ] &&              ARGS+=" --nodali"
+[ "$RALI" = false ] &&              ARGS+=" --rali"
 [ "$LOG_NORM" = true ] &&            ARGS+=" --log_norm"
 [ "$SAVE_AT_THE_END" = true ] &&     ARGS+=" --save_at_the_end"
 [ -n "$CHECKPOINT" ] &&              ARGS+=" --ckpt=$CHECKPOINT"
