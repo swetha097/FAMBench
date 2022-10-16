@@ -78,7 +78,7 @@ def input(conf_yaml, split='train'):
     # Validate known inner classes
     amp=['optim_level']
     try:
-        from common.data.rali.pipeline import SpeedPerturbationParams
+        from common.data.rocal.pipeline import SpeedPerturbationParams
         inner_classes = [
             (conf_dataset, 'speed_perturbation', SpeedPerturbationParams),
         ]
@@ -93,7 +93,7 @@ def input(conf_yaml, split='train'):
 
     # Validate outer classes
     try:
-        from common.data.rali.pipeline import PipelineParams, SpeedPerturbationParams
+        from common.data.rocal.pipeline import PipelineParams, SpeedPerturbationParams
         conf_dataset = validate_and_fill(PipelineParams, conf_dataset)
     except:
         print("WARNING: Not loading DALI PipelineParams")

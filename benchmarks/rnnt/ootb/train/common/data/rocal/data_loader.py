@@ -16,23 +16,23 @@ import os
 import math
 import numpy as np
 import torch.distributed as dist
-from .iterator import RaliRnntIterator
-from .pipeline import RaliPipeline
+from .iterator import RocalRnntIterator
+from .pipeline import RocalPipeline
 from common.helpers import print_once
 
 
 def _parse_json(json_path: str, start_label=0, predicate=lambda json: True):
     """
-    Parses json file to the format required by DALI
+    Parses json file to the format required by ROCAL
     Args:
         json_path: path to json file
-        start_label: the label, starting from which DALI will assign consecutive int numbers to every transcript
+        start_label: the label, starting from which ROCAL will assign consecutive int numbers to every transcript
         predicate: function, that accepts a sample descriptor (i.e. json dictionary) as an argument.
                    If the predicate for a given sample returns True, it will be included in the dataset.
 
     Returns:
-        output_files: dictionary, that maps file name to label assigned by DALI
-        transcripts: dictionary, that maps label assigned by DALI to the transcript
+        output_files: dictionary, that maps file name to label assigned by ROCAL
+        transcripts: dictionary, that maps label assigned by ROCAL to the transcript
     """
     import json
     global cnt
@@ -53,13 +53,13 @@ def _parse_json(json_path: str, start_label=0, predicate=lambda json: True):
     return output_files, transcripts
 
 
-class RaliDataLoader:
+class RocalDataLoader:
     """
     DataLoader is the main entry point to the data preprocessing pipeline.
     To use, create an object and then just iterate over `data_iterator`.
     DataLoader will do the rest for you.
     Example:
-        data_layer = DataLoader(RaliTrainPipeline, path, json, bs, ngpu)
+        data_layer = DataLoader(RocalTrainPipeline, path, json, bs, ngpu)
         data_it = data_layer.data_iterator
         for data in data_it:
             print(data)  # Here's your preprocessed data
@@ -79,7 +79,7 @@ class RaliDataLoader:
         self.device_type = device_type
         self.pipeline_type = self._parse_pipeline_type(pipeline_type)
         self.sampler = sampler
-        self._rali_data_iterator = self._init_iterator(gpu_id=gpu_id, dataset_path=dataset_path,
+        self._rocal_data_iterator = self._init_iterator(gpu_id=gpu_id, dataset_path=dataset_path,
                                                        config_data=config_data,
                                                        config_features=config_features,
                                                        json_names=json_names, tokenizer=tokenizer,
@@ -89,7 +89,7 @@ class RaliDataLoader:
                        pipeline_type):
         print("dataset_path", dataset_path)
         """
-        Returns data iterator. Data underneath this operator is preprocessed within Rali
+        Returns data iterator. Data underneath this operator is preprocessed within Rocal
         """
 
         output_files, transcripts = {}, {}
@@ -105,16 +105,16 @@ class RaliDataLoader:
             transcripts.update(tr)
         self.sampler.make_file_list(output_files, json_names)
         self.dataset_size = self.sampler.get_dataset_size()
-        print_once(f"Dataset read by DALI. Number of samples: {self.dataset_size}")
+        print_once(f"Dataset read by ROCAL. Number of samples: {self.dataset_size}")
         #why do I need this pipeline class object ?
-        pipeline = RaliPipeline.from_config(config_data=config_data, config_features=config_features, device_id=gpu_id,
+        pipeline = RocalPipeline.from_config(config_data=config_data, config_features=config_features, device_id=gpu_id,
                                             file_root=dataset_path, sampler=self.sampler,
                                             device_type=self.device_type, batch_size=self.batch_size,
                                             pipeline_type=pipeline_type)
-        audio_pipeline = pipeline.RaliPipline()
+        audio_pipeline = pipeline.RocalPipline()
         print("OUT of the pipeline creation")
         # Return the iterator here
-        return RaliRnntIterator(audio_pipeline, transcripts=transcripts, tokenizer=tokenizer, batch_size=self.batch_size,
+        return RocalRnntIterator(audio_pipeline, transcripts=transcripts, tokenizer=tokenizer, batch_size=self.batch_size,
                                   shard_size=self._shard_size(), pipeline_type=pipeline_type)
 
     @staticmethod
@@ -144,8 +144,8 @@ class RaliDataLoader:
 
     def data_iterator(self):
         print("DATA_ITER")
-        return self._rali_data_iterator
+        return self._rocal_data_iterator
 
     def __iter__(self):
         print("__ITER__")
-        return self._rali_data_iterator
+        return self._rocal_data_iterator

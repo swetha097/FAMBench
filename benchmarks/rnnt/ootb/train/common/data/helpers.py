@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.data.rali.data_loader import RaliDataLoader
+from common.data.rocal.data_loader import RocalDataLoader
 
 
 def dataset_size(dataset):
-    if isinstance(dataset, RaliDataLoader): # DALI
+    if isinstance(dataset, RocalDataLoader): # DALI
         return dataset.dataset_size
     else: # PyTorch
         return dataset.sampler.num_samples

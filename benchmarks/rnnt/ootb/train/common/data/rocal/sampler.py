@@ -48,7 +48,7 @@ class SimpleSampler:
     def make_file_list(self, output_files, json_names):
         self.file_list_path = os.path.join(
             "/tmp",
-            "rnnt_rali.file_list." + hash_list_of_strings(json_names)
+            "rnnt_rocal.file_list." + hash_list_of_strings(json_names)
         )
         self.write_file_list(self.process_output_files(output_files))
 

@@ -45,7 +45,7 @@ RESULT_DIR=../Results
 : ${EPOCHS_THIS_JOB:=5}
 : ${RESUME:=true}
 : ${NODALI:=true}
-: ${RALI:=false}
+: ${ROCAL:=false}
 : ${DEVICE:="gpu"}
 : ${VAL_FREQUENCY:=1}
 : ${PREDICTION_FREQUENCY:=1000}
@@ -98,7 +98,7 @@ ARGS+=" --beta2=$BETA2"
 [ "$RESUME" = true ] &&              ARGS+=" --resume"
 [ "$CUDNN_BENCHMARK" = true ] &&     ARGS+=" --cudnn_benchmark"
 [ "$NODALI" = true ] &&              ARGS+=" --nodali"
-[ "$RALI" = false ] &&              ARGS+=" --rali"
+[ "$ROCAL" = false ] &&              ARGS+=" --rocal"
 [ "$LOG_NORM" = true ] &&            ARGS+=" --log_norm"
 [ "$SAVE_AT_THE_END" = true ] &&     ARGS+=" --save_at_the_end"
 [ -n "$CHECKPOINT" ] &&              ARGS+=" --ckpt=$CHECKPOINT"

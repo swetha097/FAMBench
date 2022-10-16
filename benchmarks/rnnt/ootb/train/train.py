@@ -103,8 +103,8 @@ def parse_args():
     io = parser.add_argument_group('feature and checkpointing setup')
     io.add_argument('--nodali', action='store_true', default=True,
                     help='Don\'t use DALI pipeline for fast data processing')
-    io.add_argument('--rali', action='store_true', default=True,
-                    help='Use RALI pipeline for fast data processing')
+    io.add_argument('--rocal', action='store_true', default=True,
+                    help='Use ROCAL pipeline for fast data processing')
     io.add_argument('--device', type=str, choices=['cpu', 'gpu'],
                     default='gpu', help='Use device for execution.')
     io.add_argument('--num-workers', default=6, type=int,
@@ -337,13 +337,13 @@ def main():
 
     # exit(0)
     print("args.nodali", args.nodali)
-    print("args.rali", args.rali)
-    if args.rali:
-        from common.data.rali import sampler as rali_sampler
-        from common.data.rali.data_loader import RaliDataLoader
+    print("args.rocal", args.rocal)
+    if args.rocal:
+        from common.data.rocal import sampler as rocal_sampler
+        from common.data.rocal.data_loader import RocalDataLoader
 
         if args.num_buckets is not None:
-            sampler = rali_sampler.BucketingSampler(
+            sampler = rocal_sampler.BucketingSampler(
                 args.num_buckets,
                 batch_size,
                 world_size,
@@ -351,10 +351,10 @@ def main():
                 np_rng
             )
         else:
-            sampler = rali_sampler.SimpleSampler()
+            sampler = rocal_sampler.SimpleSampler()
 
         print("DALI DATA LOADER")
-        train_loader = RaliDataLoader(gpu_id=args.local_rank,
+        train_loader = RocalDataLoader(gpu_id=args.local_rank,
                                       dataset_path=args.dataset_dir,
                                       config_data=train_dataset_kw,
                                       config_features=train_features_kw,
@@ -366,13 +366,13 @@ def main():
                                       device_type=args.device,
                                       tokenizer=tokenizer)
 
-        val_loader = RaliDataLoader(gpu_id=args.local_rank,
+        val_loader = RocalDataLoader(gpu_id=args.local_rank,
                                     dataset_path=args.dataset_dir,
                                     config_data=val_dataset_kw,
                                     config_features=val_features_kw,
                                     json_names=args.val_manifests,
                                     batch_size=args.val_batch_size,
-                                    sampler=rali_sampler.SimpleSampler(),
+                                    sampler=rocal_sampler.SimpleSampler(),
                                     pipeline_type="val",
                                     device_type=args.device,
                                     tokenizer=tokenizer)

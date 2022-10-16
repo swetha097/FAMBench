@@ -32,8 +32,8 @@ from dllogger import JSONStreamBackend, StdOutBackend, Verbosity
 
 from common import helpers
 from common.data import features
-from common.data.rali import sampler as dali_sampler
-from common.data.rali.data_loader import RaliDataLoader
+from common.data.rocal import sampler as dali_sampler
+from common.data.rocal.data_loader import RocalDataLoader
 from common.data.features import BaseFeatures, FilterbankFeatures
 from common.data.text import Tokenizer
 from common.helpers import print_once, process_evaluation_epoch
@@ -188,7 +188,7 @@ def main():
 
     # dataset
 
-    data_loader = RaliDataLoader(
+    data_loader = RocalDataLoader(
         gpu_id=args.local_rank or 0,
         dataset_path=args.dataset_dir,
         config_data=dataset_kw,
