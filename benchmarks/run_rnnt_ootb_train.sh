@@ -24,7 +24,8 @@ mode=train
 config=tiny # default is tiny, proof of concept
 is_config=false
 
-DATASET_DIR=/media/sai/FAMBench/Dataset/
+DATASET_DIR=/dataset/Audio_Dataset/
+
 RESULT_DIR=../Results
 
 while getopts "hl:c:" flag ;

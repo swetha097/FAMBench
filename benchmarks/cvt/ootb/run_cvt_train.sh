@@ -18,7 +18,7 @@ mkdir -p ${OUTPUT_DIR}
 LOG_FILE=${OUTPUT_DIR}/cvt_${NODES}x${GPUS}x${BS}.log
 
 bash run-alt.sh -g ${GPUS} -t train --cfg experiments/imagenet/cvt/cvt-13-224x224.yaml \
-    DATASET.ROOT ../DATASET/imagenet OUTPUT_DIR ${OUTPUT_DIR} \
+    DATASET.ROOT ../../Audio_Dataset/imagenet OUTPUT_DIR ${OUTPUT_DIR} \
     TRAIN.END_EPOCH 300 TRAIN.BATCH_SIZE_PER_GPU ${BS} 2>&1 | tee ${LOG_FILE}
 
 cd ${OUTPUT_DIR}

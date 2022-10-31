@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DATASET_DIR=/media/sai/FAMBench/Dataset/
+DATASET_DIR=/dataset/Audio_Dataset/
 
 mkdir -p $DATASET_DIR/sentencepieces
 jq -r '.[]["transcript"]' $DATASET_DIR/LibriSpeech/librispeech-train-*-wav.json > tmptxt.txt

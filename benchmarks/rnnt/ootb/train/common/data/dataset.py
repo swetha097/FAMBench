@@ -182,7 +182,7 @@ class AudioDataset(Dataset):
             s["transcript"] = self.tokenizer.tokenize(tr)
             
             files = s.pop('files')
-            print("files",files)
+            # print("files",files)
             if self.ignore_offline_speed_perturbation:
                 files = [f for f in files if f['speed'] == 1.0]
 

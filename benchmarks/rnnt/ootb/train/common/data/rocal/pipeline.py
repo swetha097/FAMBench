@@ -82,9 +82,9 @@ class RocalPipeline(object):
         
         self.train = train_pipeline
         if self.train :
-            self.file_root_rocal="/media/sai/FAMBench/Dataset/LibriSpeech/train-clean-100-wav/"
+            self.file_root_rocal="/dataset/Audio_Dataset/LibriSpeech/train-clean-100-wav/"
         else:
-            self.file_root_rocal="/media/sai/FAMBench/Dataset/LibriSpeech/test-clean-wav/"
+            self.file_root_rocal="/dataset/Audio_Dataset/LibriSpeech/test-clean-wav/"
             
         self.sample_rate = sample_rate
         self.dither_coeff = dither_coeff

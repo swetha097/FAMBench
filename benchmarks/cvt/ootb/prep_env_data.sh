@@ -4,7 +4,7 @@ set -ex
 cd CvT
 pip install -r requirements-alt.txt
 
-mkdir -p ../DATASET
+mkdir -p ../../Audio_Dataset
 cd ..
 
 if [ ! -d DATASET/imagenet ] ; then

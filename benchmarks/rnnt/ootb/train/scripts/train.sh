@@ -18,7 +18,7 @@
 
 export OMP_NUM_THREADS=1
 
-DATASET_DIR=/media/sai/FAMBench/Dataset/
+DATASET_DIR=/dataset/Audio_Dataset/
 RESULT_DIR=../Results
 
 : ${DATA_DIR:=${1:-"$DATASET_DIR/LibriSpeech"}}
@@ -28,7 +28,7 @@ RESULT_DIR=../Results
 : ${FB5CONFIG:=${5}}
 : ${CHECKPOINT:-}
 : ${CUDNN_BENCHMARK:=true}
-: ${NUM_GPUS:=1}
+: ${NUM_GPUS:=8}
 : ${AMP:=false}
 : ${GLOBAL_BATCH_SIZE:=1024}
 : ${VAL_BATCH_SIZE:=2}
@@ -42,7 +42,7 @@ RESULT_DIR=../Results
 : ${WARMUP_EPOCHS:=6}  # 8000 steps with 1x8x24 should be ~5.6 epochs
 : ${HOLD_EPOCHS:=40}
 : ${SAVE_AT_THE_END:=false}
-: ${EPOCHS_THIS_JOB:=5}
+: ${EPOCHS_THIS_JOB:=0}
 : ${RESUME:=true}
 : ${NODALI:=true}
 : ${ROCAL:=false}
@@ -53,7 +53,7 @@ RESULT_DIR=../Results
 : ${BETA2:=0.999}
 : ${LOG_FREQUENCY:=1}
 : ${TRAIN_MANIFESTS:="$DATA_DIR/librispeech-train-clean-100-wav.json"}
-                      # $DATA_DIR/librispeech-train-clean-360-wav.json"}
+                      $DATA_DIR/librispeech-train-clean-360-wav.json"}
                       # Remove train-other-500, which is 500 hours to reduce set-up time.
                       # $DATA_DIR/librispeech-train-other-500-wav.json"}
 : ${VAL_MANIFESTS:="$DATA_DIR/librispeech-dev-clean-wav.json"}
@@ -98,7 +98,7 @@ ARGS+=" --beta2=$BETA2"
 [ "$RESUME" = true ] &&              ARGS+=" --resume"
 [ "$CUDNN_BENCHMARK" = true ] &&     ARGS+=" --cudnn_benchmark"
 [ "$NODALI" = true ] &&              ARGS+=" --nodali"
-[ "$ROCAL" = false ] &&              ARGS+=" --rocal"
+[ "$ROCAL" = true ] &&              ARGS+=" --rocal"
 [ "$LOG_NORM" = true ] &&            ARGS+=" --log_norm"
 [ "$SAVE_AT_THE_END" = true ] &&     ARGS+=" --save_at_the_end"
 [ -n "$CHECKPOINT" ] &&              ARGS+=" --ckpt=$CHECKPOINT"

@@ -103,7 +103,7 @@ def parse_args():
     io = parser.add_argument_group('feature and checkpointing setup')
     io.add_argument('--nodali', action='store_true', default=True,
                     help='Don\'t use DALI pipeline for fast data processing')
-    io.add_argument('--rocal', action='store_true', default=True,
+    io.add_argument('--rocal', action='store_true', default=False,
                     help='Use ROCAL pipeline for fast data processing')
     io.add_argument('--device', type=str, choices=['cpu', 'gpu'],
                     default='gpu', help='Use device for execution.')
@@ -335,10 +335,10 @@ def main():
     print("tokenizer", tokenizer)
     print("args.num_buckets", args.num_buckets)
 
-    # exit(0)
     print("args.nodali", args.nodali)
     print("args.rocal", args.rocal)
     if args.rocal:
+        print("in rocal dataloader")
         from common.data.rocal import sampler as rocal_sampler
         from common.data.rocal.data_loader import RocalDataLoader
 
@@ -379,36 +379,36 @@ def main():
         print("DALI DATA LOADER")
         print("EXITING 1")
         # exit(0)
-    # else:
-        # from common.data.data_loader import AudioDataLoader
+    else:
+        from common.data.data_loader import AudioDataLoader
 
-        #TODO, pass in config data for sample_rate, etc. potentially use wrapper class to drive dataset, sampler, and dataloader creation, returning just the dataloader
-        # train_loader = AudioDataLoader(
-        #     config_features=train_features_kw,
-        #     pipeline_type="train",
-        #     gpu_id=args.local_rank,
-        #     data_dir=args.dataset_dir,
-        #     tokenizer=tokenizer,
-        #     manifest_fpaths=args.train_manifests,
-        #     batch_size=batch_size,
-        #     num_replicas=world_size,
-        #     rank=args.local_rank,
-        #     num_workers=args.num_workers,
-        #     device_type=args.device)
+        # TODO, pass in config data for sample_rate, etc. potentially use wrapper class to drive dataset, sampler, and dataloader creation, returning just the dataloader
+        train_loader = AudioDataLoader(
+            config_features=train_features_kw,
+            pipeline_type="train",
+            gpu_id=args.local_rank,
+            data_dir=args.dataset_dir,
+            tokenizer=tokenizer,
+            manifest_fpaths=args.train_manifests,
+            batch_size=batch_size,
+            num_replicas=world_size,
+            rank=args.local_rank,
+            num_workers=args.num_workers,
+            device_type=args.device)
 
-        # val_loader = AudioDataLoader(
-        #     config_features=val_features_kw,
-        #     pipeline_type="val",
-        #     gpu_id=args.local_rank,
-        #     data_dir=args.dataset_dir,
-        #     tokenizer=tokenizer,
-        #     manifest_fpaths=args.val_manifests,
-        #     batch_size=batch_size,
-        #     num_replicas=world_size,
-        #     rank=args.local_rank,
-        #     num_workers=args.num_workers,
-        #     device_type=args.device)
-    print("EXITING ***** YAY")
+        val_loader = AudioDataLoader(
+            config_features=val_features_kw,
+            pipeline_type="val",
+            gpu_id=args.local_rank,
+            data_dir=args.dataset_dir,
+            tokenizer=tokenizer,
+            manifest_fpaths=args.val_manifests,
+            batch_size=batch_size,
+            num_replicas=world_size,
+            rank=args.local_rank,
+            num_workers=args.num_workers,
+            device_type=args.device)
+        print("EXITING ***** YAY")
 
     # exit(0)
     train_feat_proc = train_augmentations
@@ -516,6 +516,7 @@ def main():
 
     # training loop
     model.train()
+    print("args.epochs", args.epochs)
     for epoch in range(start_epoch + 1, args.epochs + 1):
         print("\n Epoch: ", epoch)
         if args.mlperf:
@@ -621,8 +622,10 @@ def main():
                          'lrate': optimizer.param_groups[0]['lr']})
 
                     # FB5 Logger
-                    if (time.time() - start_time) > MAX_TIME:
-                       break
+                    # print("time.time() - start_time", time.time() - start_time)
+                    # if (time.time() - start_time) > MAX_TIME:
+                    #     print("BREAKING HERE")
+                    #     break
 
                 step_start_time = time.time()
 
@@ -637,9 +640,9 @@ def main():
         log((epoch,), None, 'train_avg', {'throughput': epoch_utts / epoch_time,
                                           'took': epoch_time})
 
-        # FB5 Logger
-        if (time.time() - start_time) > MAX_TIME:
-            break
+        # # FB5 Loggerp
+        # if (time.time() - start_time) > MAX_TIME:
+        #     break
 
         # if epoch % args.val_frequency == 0:
         wer = evaluate(epoch, step, val_loader, val_feat_proc,
@@ -660,6 +663,8 @@ def main():
             logging.log_end(logging.constants.BLOCK_STOP, metadata=dict(first_epoch_num=epoch))
 
         if last_wer <= args.target:
+            print("last_wer", last_wer)
+            print("args.target", args.target)
             if args.mlperf:
                 logging.log_end(logging.constants.RUN_STOP, metadata={'status': 'success'})
             if args.fb5logger is not None:
@@ -667,6 +672,7 @@ def main():
             print_once(f'Finished after {args.epochs_this_job} epochs.')
             break
         if 0 < args.epochs_this_job <= epoch - start_epoch:
+            print("here eee")
             print_once(f'Finished after {args.epochs_this_job} epochs.')
             break
         # end of epoch
